@@ -2,7 +2,7 @@
 import argparse
 import sys
 import os
-from parser import parse_tlog
+from parser import parse_log
 from summary import generate_summary, print_summary
 from exporter import export_all
 from graphs import generate_all_graphs
@@ -19,12 +19,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         prog="MAVLink Flight Log Analyzer",
         description=(
             "A command-line tool for parsing and analysing MAVLink .tlog "
-            "flight logs.  Generates summaries, CSV exports, graphs, and "
-            "anomaly warnings."
+            "and ArduPilot .bin flight logs.  Generates summaries, CSV "
+            "exports, graphs, and anomaly warnings."
         ),
         epilog=(
             "Examples:\n"
             "  python analyzer.py logs/sample.tlog --summary\n"
+            "  python analyzer.py logs/sample.bin  --summary\n"
             "  python analyzer.py logs/sample.tlog --export --graphs\n"
             "  python analyzer.py logs/sample.tlog --all\n"
         ),
@@ -34,7 +35,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "logfile",
         type=str,
-        help="Path to the .tlog MAVLink log file to analyse.",
+        help="Path to a .tlog (MAVLink) or .bin (DataFlash) log file to analyse.",
     )
 
     parser.add_argument(
@@ -76,6 +77,7 @@ def print_banner() -> None:
     print("==============================================")
     print("|   MAVLink Flight Log Analyzer (CLI)        |")
     print("|   Parse - Summarise - Export - Visualise   |")
+    print("|   Supports: .tlog and .bin log formats     |")
     print("==============================================")
     print()
 
@@ -103,7 +105,7 @@ def main() -> None:
 
     
     try:
-        data = parse_tlog(args.logfile)
+        data = parse_log(args.logfile)
     except FileNotFoundError as exc:
         print(f"\n[ERROR] {exc}")
         sys.exit(1)
@@ -113,9 +115,10 @@ def main() -> None:
 
     
     if data["meta"]["parsed_messages"] == 0:
-        print("[WARN] No supported MAVLink messages found in this log.")
-        print("       Supported types: GPS_RAW_INT, GLOBAL_POSITION_INT, "
+        print("[WARN] No supported messages found in this log.")
+        print("       For .tlog: GPS_RAW_INT, GLOBAL_POSITION_INT, "
               "SYS_STATUS, ATTITUDE")
+        print("       For .bin : GPS, ATT, BAT")
         sys.exit(0)
 
     

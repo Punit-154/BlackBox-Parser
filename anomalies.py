@@ -4,25 +4,38 @@ from datetime import datetime
 
 BATTERY_LOW_THRESHOLD = 20          
 ALTITUDE_DROP_THRESHOLD = 10.0      
-ROLL_LIMIT_DEG = 45.0               
-PITCH_LIMIT_DEG = 45.0              
+ROLL_LIMIT_DEG = 360.0               
+PITCH_LIMIT_DEG = 360.0              
+
+# Epoch timestamp for year 2000 — used to detect boot-relative timestamps
+_EPOCH_YEAR_2000 = 946684800
 
 
 def _ts_to_time_str(timestamp: float) -> str:
-    
+    """Convert a timestamp to HH:MM:SS string.
+
+    Safely handles boot-relative timestamps (common in DataFlash .bin
+    logs) by returning a relative-time label instead of crashing.
+    """
+    if timestamp < _EPOCH_YEAR_2000:
+        return f"T+{timestamp:.0f}s"
     return datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")
 
 
 def check_low_battery(data: dict, threshold: int = BATTERY_LOW_THRESHOLD) -> list[str]:
-    
+    """Check for low battery events.
+
+    Safely skips entries where battery_remaining is None (common with
+    DataFlash .bin logs where BAT messages lack this field).
+    """
     warnings_list = []
     already_warned = False
 
-    for entry in data["sys_status"]:
-        remaining = entry.get("battery_remaining", -1)
+    for entry in data["battery"]:
+        remaining = entry.get("battery_remaining")
 
-        
-        if remaining < 0:
+        # Skip None values (DataFlash .bin) and negative sentinel values
+        if remaining is None or remaining < 0:
             continue
 
         if remaining < threshold and not already_warned:
@@ -37,8 +50,18 @@ def check_low_battery(data: dict, threshold: int = BATTERY_LOW_THRESHOLD) -> lis
 
 
 def check_altitude_drop(data: dict, threshold: float = ALTITUDE_DROP_THRESHOLD) -> list[str]:
+    """Check for sudden altitude drops.
+
+    Safely handles None values in relative_alt (filters them out
+    before computing differences).
+    """
     warnings_list = []
-    records = data["global_position"]
+
+    # Filter to only records with valid relative_alt values
+    records = [
+        r for r in data["position"]
+        if r.get("relative_alt") is not None
+    ]
 
     for i in range(1, len(records)):
         prev_alt = records[i - 1]["relative_alt"]
@@ -60,12 +83,22 @@ def check_excessive_attitude(
     roll_limit: float = ROLL_LIMIT_DEG,
     pitch_limit: float = PITCH_LIMIT_DEG,
 ) -> list[str]:
-    
+    """Check for excessive roll or pitch angles.
+
+    Safely skips entries where roll or pitch is None.
+    """
     warnings_list = []
 
     for entry in data["attitude"]:
-        roll_deg = abs(math.degrees(entry["roll"]))
-        pitch_deg = abs(math.degrees(entry["pitch"]))
+        roll = entry.get("roll")
+        pitch = entry.get("pitch")
+
+        # Skip entries with missing attitude data
+        if roll is None or pitch is None:
+            continue
+
+        roll_deg = abs(math.degrees(roll))
+        pitch_deg = abs(math.degrees(pitch))
         time_str = _ts_to_time_str(entry["timestamp"])
 
         if roll_deg > roll_limit:

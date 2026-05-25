@@ -8,10 +8,14 @@ def _ensure_dir(dirpath: str) -> None:
 
 
 def export_gps_csv(data: dict, output_dir: str) -> str | None:
+    """Export GPS telemetry records to CSV.
 
-    records = data["gps_raw"]
+    Works identically for both .tlog and .bin sources since
+    the parser normalises GPS data into the same schema.
+    """
+    records = data["gps"]
     if not records:
-        print("[WARN] No GPS_RAW_INT data to export.")
+        print("[WARN] No GPS data to export.")
         return None
 
     df = pd.DataFrame(records)
@@ -25,17 +29,26 @@ def export_gps_csv(data: dict, output_dir: str) -> str | None:
 
 
 def export_altitude_csv(data: dict, output_dir: str) -> str | None:
-    
-    records = data["global_position"]
+    """Export position / altitude records to CSV.
+
+    Note: For .bin logs, the position list will typically be empty
+    because DataFlash logs lack a GLOBAL_POSITION_INT equivalent.
+    """
+    records = data["position"]
     if not records:
-        print("[WARN] No GLOBAL_POSITION_INT data to export.")
+        print("[WARN] No position data to export.")
         return None
 
     df = pd.DataFrame(records)
 
-    
+    # Compute ground speed from vx/vy if both are available and not None
     if "vx" in df.columns and "vy" in df.columns:
-        df["ground_speed"] = (df["vx"] ** 2 + df["vy"] ** 2).apply(math.sqrt)
+        # Replace None with NaN so math works, then compute
+        vx = pd.to_numeric(df["vx"], errors="coerce")
+        vy = pd.to_numeric(df["vy"], errors="coerce")
+        df["ground_speed"] = (vx ** 2 + vy ** 2).apply(
+            lambda v: math.sqrt(v) if pd.notna(v) else None
+        )
 
     cols = ["datetime", "lat", "lon", "alt", "relative_alt", "ground_speed", "heading"]
     df = df[[c for c in cols if c in df.columns]]
@@ -47,10 +60,14 @@ def export_altitude_csv(data: dict, output_dir: str) -> str | None:
 
 
 def export_battery_csv(data: dict, output_dir: str) -> str | None:
-    
-    records = data["sys_status"]
+    """Export battery telemetry records to CSV.
+
+    Handles None values in battery_remaining (common with .bin logs
+    where DataFlash BAT messages don't include this field).
+    """
+    records = data["battery"]
     if not records:
-        print("[WARN] No SYS_STATUS data to export.")
+        print("[WARN] No battery data to export.")
         return None
 
     df = pd.DataFrame(records)
@@ -64,21 +81,24 @@ def export_battery_csv(data: dict, output_dir: str) -> str | None:
 
 
 def export_attitude_csv(data: dict, output_dir: str) -> str | None:
-    
+    """Export attitude records to CSV.
+
+    Safely handles None values in roll/pitch/yaw and angular rates.
+    For .bin logs, rollspeed/pitchspeed/yawspeed will be None.
+    """
     records = data["attitude"]
     if not records:
-        print("[WARN] No ATTITUDE data to export.")
+        print("[WARN] No attitude data to export.")
         return None
 
     df = pd.DataFrame(records)
 
-    
-    if "roll" in df.columns:
-        df["roll_deg"] = df["roll"].apply(math.degrees).round(2)
-    if "pitch" in df.columns:
-        df["pitch_deg"] = df["pitch"].apply(math.degrees).round(2)
-    if "yaw" in df.columns:
-        df["yaw_deg"] = df["yaw"].apply(math.degrees).round(2)
+    # Convert radians to degrees — safely handle None values
+    for field in ("roll", "pitch", "yaw"):
+        if field in df.columns:
+            df[f"{field}_deg"] = df[field].apply(
+                lambda v: round(math.degrees(v), 2) if v is not None else None
+            )
 
     cols = [
         "datetime", "roll", "pitch", "yaw",

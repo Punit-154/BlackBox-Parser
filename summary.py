@@ -14,11 +14,19 @@ def _format_duration(seconds: float) -> str:
     return f"{minutes}m {secs}s"
 
 
-def _compute_speed_from_global_position(global_position: list) -> list:
+def _compute_speed_from_position(position: list) -> list:
+    """Compute ground speed from position vx/vy components.
+
+    Safely handles None values in vx/vy fields (common with .bin logs
+    where position data may be empty or partially populated).
+    """
     speeds = []
-    for entry in global_position:
-        vx = entry.get("vx", 0.0)
-        vy = entry.get("vy", 0.0)
+    for entry in position:
+        vx = entry.get("vx")
+        vy = entry.get("vy")
+        # Skip entries where velocity data is missing
+        if vx is None or vy is None:
+            continue
         speed = math.sqrt(vx ** 2 + vy ** 2)
         speeds.append(speed)
     return speeds
@@ -33,36 +41,43 @@ def generate_summary(data: dict) -> dict:
     end = meta.get("end_time") or 0
     duration = max(end - start, 0)
 
-    
+    # --- Max altitude (from position data, if available) ---
+    # Filter out None values — .bin logs may have empty position list
     altitudes = [
         entry["relative_alt"]
-        for entry in data["global_position"]
-        if "relative_alt" in entry
+        for entry in data["position"]
+        if entry.get("relative_alt") is not None
     ]
     max_altitude = max(altitudes) if altitudes else 0.0
 
-    
-    
-    gps_speeds = [entry["speed"] for entry in data["gps_raw"] if "speed" in entry]
-    global_speeds = _compute_speed_from_global_position(data["global_position"])
+    # --- Speed ---
+    # Prefer GPS-derived speed; fall back to computing from position vx/vy.
+    # Filter out None values for safety.
+    gps_speeds = [
+        entry["speed"]
+        for entry in data["gps"]
+        if entry.get("speed") is not None
+    ]
+    global_speeds = _compute_speed_from_position(data["position"])
 
     all_speeds = gps_speeds if gps_speeds else global_speeds
 
     avg_speed = sum(all_speeds) / len(all_speeds) if all_speeds else 0.0
     max_speed = max(all_speeds) if all_speeds else 0.0
 
-    
+    # --- Battery ---
+    # Filter out None and negative values — .bin logs set battery_remaining=None
     battery_values = [
         entry["battery_remaining"]
-        for entry in data["sys_status"]
-        if entry.get("battery_remaining", -1) >= 0
+        for entry in data["battery"]
+        if entry.get("battery_remaining") is not None and entry["battery_remaining"] >= 0
     ]
     battery_start = battery_values[0] if battery_values else -1
     battery_end = battery_values[-1] if battery_values else -1
     battery_used = (battery_start - battery_end) if (battery_start >= 0 and battery_end >= 0) else 0
 
     
-    gps_count = len(data["gps_raw"]) + len(data["global_position"])
+    gps_count = len(data["gps"]) + len(data["position"])
     attitude_count = len(data["attitude"])
 
     stats = {

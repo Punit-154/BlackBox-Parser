@@ -13,7 +13,23 @@ def _ensure_dir(dirpath: str) -> None:
 
 
 def _timestamps_to_datetimes(records: list) -> list:
-    return [datetime.fromtimestamp(r["timestamp"]) for r in records]
+    """Convert timestamp fields to datetime objects for plotting.
+
+    Safely skips records with None or boot-relative timestamps
+    (common with DataFlash .bin logs).
+    """
+    result = []
+    for r in records:
+        ts = r.get("timestamp")
+        if ts is None or ts < 946684800:  # _EPOCH_YEAR_2000
+            continue
+        result.append(datetime.fromtimestamp(ts))
+    return result
+
+
+def _filter_valid_records(records: list, required_field: str) -> list:
+    """Return only records where *required_field* exists and is not None."""
+    return [r for r in records if r.get(required_field) is not None]
 
 
 def _apply_style(ax, title: str, xlabel: str, ylabel: str) -> None:
@@ -30,14 +46,24 @@ def _apply_style(ax, title: str, xlabel: str, ylabel: str) -> None:
 
 
 def generate_altitude_graph(data: dict, output_dir: str) -> str | None:
-    
-    records = data["global_position"]
+    """Generate altitude vs time graph from position data."""
+    records = _filter_valid_records(data["position"], "relative_alt")
     if not records:
         print("[WARN] No altitude data available for graph.")
         return None
 
     times = _timestamps_to_datetimes(records)
     altitudes = [r["relative_alt"] for r in records]
+
+    # Ensure times and altitudes are aligned after filtering
+    if len(times) != len(altitudes):
+        min_len = min(len(times), len(altitudes))
+        times = times[:min_len]
+        altitudes = altitudes[:min_len]
+
+    if not times:
+        print("[WARN] No valid timestamps for altitude graph.")
+        return None
 
     fig, ax = plt.subplots(figsize=(12, 5))
     ax.plot(times, altitudes, color="#2196F3", linewidth=1.2, label="Relative Altitude")
@@ -54,14 +80,30 @@ def generate_altitude_graph(data: dict, output_dir: str) -> str | None:
 
 
 def generate_battery_graph(data: dict, output_dir: str) -> str | None:
-    
-    records = [r for r in data["sys_status"] if r.get("battery_remaining", -1) >= 0]
+    """Generate battery level vs time graph.
+
+    Safely filters out records where battery_remaining is None
+    (common with DataFlash .bin logs).
+    """
+    records = [
+        r for r in data["battery"]
+        if r.get("battery_remaining") is not None and r["battery_remaining"] >= 0
+    ]
     if not records:
         print("[WARN] No battery data available for graph.")
         return None
 
     times = _timestamps_to_datetimes(records)
     battery = [r["battery_remaining"] for r in records]
+
+    if len(times) != len(battery):
+        min_len = min(len(times), len(battery))
+        times = times[:min_len]
+        battery = battery[:min_len]
+
+    if not times:
+        print("[WARN] No valid timestamps for battery graph.")
+        return None
 
     fig, ax = plt.subplots(figsize=(12, 5))
     ax.plot(times, battery, color="#4CAF50", linewidth=1.2, label="Battery %")
@@ -79,20 +121,47 @@ def generate_battery_graph(data: dict, output_dir: str) -> str | None:
 
 
 def generate_speed_graph(data: dict, output_dir: str) -> str | None:
-    
-    if data["gps_raw"]:
-        records = data["gps_raw"]
-        speeds = [r["speed"] for r in records]
-        source = "GPS_RAW_INT"
-    elif data["global_position"]:
-        records = data["global_position"]
-        speeds = [math.sqrt(r["vx"] ** 2 + r["vy"] ** 2) for r in records]
-        source = "GLOBAL_POSITION_INT"
-    else:
+    """Generate ground speed vs time graph.
+
+    Prefers GPS data; falls back to computing speed from position vx/vy.
+    Safely handles None values in speed and velocity fields.
+    """
+    if data["gps"]:
+        # Filter out records where speed is None
+        records = _filter_valid_records(data["gps"], "speed")
+        if records:
+            speeds = [r["speed"] for r in records]
+            source = "GPS"
+        else:
+            records = []
+            speeds = []
+            source = None
+
+    if not records and data["position"]:
+        # Fall back to position data — compute speed from vx/vy
+        valid = [
+            r for r in data["position"]
+            if r.get("vx") is not None and r.get("vy") is not None
+        ]
+        if valid:
+            records = valid
+            speeds = [math.sqrt(r["vx"] ** 2 + r["vy"] ** 2) for r in records]
+            source = "POSITION"
+
+    if not records:
         print("[WARN] No speed data available for graph.")
         return None
 
     times = _timestamps_to_datetimes(records)
+
+    if len(times) != len(speeds):
+        min_len = min(len(times), len(speeds))
+        times = times[:min_len]
+        speeds = speeds[:min_len]
+
+    if not times:
+        print("[WARN] No valid timestamps for speed graph.")
+        return None
 
     fig, ax = plt.subplots(figsize=(12, 5))
     ax.plot(times, speeds, color="#FF9800", linewidth=1.2, label=f"Speed ({source})")
@@ -109,8 +178,15 @@ def generate_speed_graph(data: dict, output_dir: str) -> str | None:
 
 
 def generate_attitude_graph(data: dict, output_dir: str) -> str | None:
-    
-    records = data["attitude"]
+    """Generate roll and pitch vs time graph.
+
+    Safely handles None values in roll/pitch fields (should not normally
+    be None, but defensive coding for robustness).
+    """
+    records = [
+        r for r in data["attitude"]
+        if r.get("roll") is not None and r.get("pitch") is not None
+    ]
     if not records:
         print("[WARN] No attitude data available for graph.")
         return None
@@ -118,6 +194,16 @@ def generate_attitude_graph(data: dict, output_dir: str) -> str | None:
     times = _timestamps_to_datetimes(records)
     roll_deg = [math.degrees(r["roll"]) for r in records]
     pitch_deg = [math.degrees(r["pitch"]) for r in records]
+
+    if len(times) != len(roll_deg):
+        min_len = min(len(times), len(roll_deg))
+        times = times[:min_len]
+        roll_deg = roll_deg[:min_len]
+        pitch_deg = pitch_deg[:min_len]
+
+    if not times:
+        print("[WARN] No valid timestamps for attitude graph.")
+        return None
 
     fig, ax = plt.subplots(figsize=(12, 5))
     ax.plot(times, roll_deg, color="blue", linewidth=1.2, label="Roll (+Right / -Left)")
