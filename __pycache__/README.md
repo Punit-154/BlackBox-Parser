@@ -219,3 +219,41 @@ Thresholds can be modified in `anomalies.py` at the top of the file.
 
 ---
 
+## Graph Diagnostics & Inference
+
+The generated graphs provide crucial insights into drone health and flight behavior. Here is how to interpret the 5 graphs and identify potential issues:
+
+### 1. Altitude vs Time (`altitude_vs_time.png`)
+*   **What it shows**: The relative height of the drone above the takeoff point over the duration of the flight.
+*   **Normal look**: Smooth ascents, descents, and level cruising.
+*   **Issue: Sudden Drops or Jitters**
+    *   **Effects**: Unstable flight, drone abruptly losing altitude.
+    *   **Causes**: Barometer issues (often caused by wind hitting the sensor if unprotected), failing motors/ESCs, or sudden voltage sags causing a loss of thrust.
+
+### 2. Battery Level vs Time (`battery_vs_time.png`)
+*   **What it shows**: The estimated remaining battery percentage over time.
+*   **Normal look**: A steady, linear downward slope from 100% towards the end of the flight.
+*   **Issue: Sudden Non-Linear Drops**
+    *   **Effects**: Flight time abruptly cut short, sudden battery failsafes (RTL or Land).
+    *   **Causes**: A dying or degraded battery cell (high internal resistance), flying in extreme cold (reduces battery efficiency), or pulling too much current for the battery's C-rating.
+
+### 3. Ground Speed vs Time (`speed_vs_time.png`)
+*   **What it shows**: The horizontal speed of the drone in meters per second.
+*   **Normal look**: Gradual increases and decreases aligned with flight phases.
+*   **Issue: Wild Oscillations or "Sawtooth" Pattern**
+    *   **Effects**: Jerky flight, inefficiency, poor camera footage.
+    *   **Causes**: Poor PID tuning (specifically speed/position controller overshooting), extreme wind gusts, or GPS multipathing (GPS signals bouncing off buildings causing speed calculation errors).
+
+### 4. Attitude (Roll and Pitch) vs Time (`attitude_vs_time.png`)
+*   **What it shows**: The roll (left/right tilt) and pitch (forward/back tilt) angles in degrees.
+*   **Normal look**: Values staying within a safe envelope (e.g., ±30°) with smooth transitions.
+*   **Issue: Extreme Angles or High-Frequency Vibrations**
+    *   **Effects**: Drone flipping, loss of control, or highly blurry camera footage (jello effect).
+    *   **Causes**: If the angles briefly hit >45°, the drone might be tumbling or reacting to a severe gust of wind. If the graph looks like a thick solid block of color (high-frequency oscillation), this indicates severe frame vibration, unbalanced propellers, or PID values (P or D gain) set much too high.
+
+### 5. Power Analysis (Voltage & Current vs Time) (`power_vs_time.png`)
+*   **What it shows**: Overlaps battery voltage (V) on one axis and drawn current (A) on the other.
+*   **Normal look**: Current spikes when accelerating, accompanied by small, temporary dips in voltage.
+*   **Issue: Severe Voltage Sag**
+    *   **Effects**: Drone brownout (flight controller reboots mid-air), ESC sync loss, or catastrophic crash.
+    *   **Causes**: When current (A) spikes, if the voltage (V) plummets dangerously close to the critical threshold (e.g., 3.2V per cell), the battery is inadequate for the drone's power draw. This means the battery is either old, damaged, or has a C-rating (discharge rate) that is far too low for the motors.

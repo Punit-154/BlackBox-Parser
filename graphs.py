@@ -221,13 +221,84 @@ def generate_attitude_graph(data: dict, output_dir: str) -> str | None:
     return filepath
 
 
+def generate_power_graph(data: dict, output_dir: str) -> str | None:
+    """Generate Voltage and Current vs Time graph.
+    
+    This is highly useful for identifying 'voltage sag' under heavy load,
+    which is a common cause of brownouts and drone crashes. If voltage 
+    drops significantly when current spikes, the battery is struggling.
+    """
+    records = [
+        r for r in data["battery"]
+        if r.get("voltage") is not None and r.get("current") is not None
+    ]
+    if not records:
+        print("[WARN] No power data available for graph.")
+        return None
+
+    times = _timestamps_to_datetimes(records)
+    voltage = [r["voltage"] for r in records]
+    current = [r["current"] for r in records]
+
+    if len(times) != len(voltage):
+        min_len = min(len(times), len(voltage))
+        times = times[:min_len]
+        voltage = voltage[:min_len]
+        current = current[:min_len]
+
+    if not times:
+        print("[WARN] No valid timestamps for power graph.")
+        return None
+
+    fig, ax1 = plt.subplots(figsize=(12, 5))
+    
+    # Plot Voltage on left axis
+    color1 = 'tab:blue'
+    ax1.set_xlabel('Time', fontsize=11)
+    ax1.set_ylabel('Voltage (V)', color=color1, fontsize=11)
+    ax1.plot(times, voltage, color=color1, linewidth=1.5, label="Voltage (V)")
+    ax1.tick_params(axis='y', labelcolor=color1)
+    ax1.grid(True, linestyle="--", alpha=0.5)
+
+    # Plot Current on right axis
+    ax2 = ax1.twinx()  
+    color2 = 'tab:red'
+    ax2.set_ylabel('Current (A)', color=color2, fontsize=11)  
+    ax2.plot(times, current, color=color2, linewidth=1.2, alpha=0.7, label="Current (A)")
+    ax2.tick_params(axis='y', labelcolor=color2)
+
+    # Title and formatting
+    plt.title("Power Analysis: Voltage & Current vs Time", fontsize=14, fontweight="bold", pad=12)
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=30, ha="right")
+    
+    # Combine legends
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right', fontsize=9)
+
+    fig.tight_layout()
+    filepath = os.path.join(output_dir, "power_vs_time.png")
+    fig.savefig(filepath, dpi=150)
+    plt.close(fig)
+
+    print(f"[OK] Graph saved -> {filepath}")
+    return filepath
+
+
 def generate_all_graphs(data: dict, output_dir: str = "output/graphs") -> list[str]:
 
     _ensure_dir(output_dir)
     print(f"\n[INFO] Generating graphs in: {output_dir}/")
 
     generated = []
-    for generator in (generate_altitude_graph, generate_battery_graph, generate_speed_graph, generate_attitude_graph):
+    for generator in (
+        generate_altitude_graph, 
+        generate_battery_graph, 
+        generate_speed_graph, 
+        generate_attitude_graph,
+        generate_power_graph
+    ):
         path = generator(data, output_dir)
         if path:
             generated.append(path)

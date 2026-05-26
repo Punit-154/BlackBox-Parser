@@ -412,6 +412,8 @@ def parse_bin(filepath: str) -> dict:
         data[storage_key].append(parsed)
         data["meta"]["parsed_messages"] += 1
 
+    _post_process_bin_data(data)
+
     print(
         f"[INFO] Parsed {data['meta']['parsed_messages']} relevant messages "
         f"out of {data['meta']['total_messages']} total."
@@ -419,6 +421,51 @@ def parse_bin(filepath: str) -> dict:
     _print_record_counts(data)
 
     return data
+
+
+def _post_process_bin_data(data: dict) -> None:
+    """Post-process .bin data to recover missing fields through estimation.
+    
+    1. Reconstructs 'relative_alt' in the position array by using the first 
+       GPS altitude as a home reference point.
+    2. Estimates 'battery_remaining' percentage by auto-detecting LiPo cell 
+       count from max voltage, and applying a basic linear discharge curve.
+    """
+    # 1. Altitude Math (Offset from Home)
+    if data["gps"] and not data["position"]:
+        home_alt = data["gps"][0]["alt"]
+        for g in data["gps"]:
+            data["position"].append({
+                "timestamp": g["timestamp"],
+                "datetime": g["datetime"],
+                "lat": g["lat"],
+                "lon": g["lon"],
+                "alt": g["alt"],
+                "relative_alt": g["alt"] - home_alt,
+                "vx": None,
+                "vy": None,
+                "vz": None,
+                "heading": None
+            })
+
+    # 2. Battery Percentage (Voltage Estimation)
+    if data["battery"]:
+        max_v = max(b["voltage"] for b in data["battery"])
+        if max_v > 0:
+            # Standard fully charged LiPo cell is ~4.2V. 
+            # Divide max voltage by 4.2 and round to nearest whole cell count (1S, 2S, 3S, 4S...)
+            cells = max(1, round(max_v / 4.2))
+            
+            # Standard discharge mapping: 4.2V = 100%, 3.5V = 0%
+            full_v = 4.2 * cells
+            empty_v = 3.5 * cells
+            
+            for b in data["battery"]:
+                if b.get("battery_remaining") is None:
+                    # Basic linear mapping from voltage to percentage
+                    pct = (b["voltage"] - empty_v) / (full_v - empty_v) * 100
+                    pct = max(0, min(100, pct))
+                    b["battery_remaining"] = round(pct)
 
 
 # ===================================================================
