@@ -11,6 +11,7 @@ It fully supports both:
 - **CSV Export**: Extracts telemetry into `output/csv/` for GPS, Attitude, Altitude, and Battery data.
 - **Graphs**: Generates PNG visualizations in `output/graphs/` for Altitude, Battery, Speed, Power, and Attitude vs. Time.
 - **PDF Report**: Generates a self-contained PDF report with summary, embedded graphs, and warnings in `output/flight_report.pdf`.
+- **Flight Track Map**: Generates an interactive HTML map with color-coded flight path (green=slow, red=fast).
 - **Anomalies**: Detects critical warnings (low battery, altitude drop, excessive roll/pitch angles).
 - **Batch Mode**: Analyze multiple logs at once and compare them in a side-by-side table.
 - **Interactive Mode**: Menu-driven interface for users who prefer not to memorize CLI flags.
@@ -41,6 +42,9 @@ python analyzer.py logs/sample.tlog --all
 
 # Generate a self-contained PDF report
 python analyzer.py logs/sample.tlog --report
+
+# Generate an interactive flight track map
+python analyzer.py logs/sample.tlog --map
 
 # Batch analyze all logs in a folder
 python analyzer.py --batch logs/

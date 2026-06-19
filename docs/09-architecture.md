@@ -21,13 +21,13 @@
                   │                         │
      ┌────────────┼────────────┐            │
      │            │            │            │
-┌────▼────┐ ┌────▼────┐ ┌────▼────┐ ┌─────▼─────┐ ┌─────────┐
-│summary  │ │exporter │ │ graphs  │ │ anomalies │ │reporter │
-│  .py    │ │  .py    │ │  .py    │ │   .py     │ │  .py    │
-└────┬────┘ └────┬────┘ └────┬────┘ └─────┬─────┘ └────┬────┘
-     │            │            │            │             │
-     ▼            ▼            ▼            ▼             ▼
-  Terminal     CSV files    PNG files   Warnings    PDF report
+┌────▼────┐ ┌────▼────┐ ┌────▼────┐ ┌─────▼─────┐ ┌─────────┐ ┌──────────┐
+│summary  │ │exporter │ │ graphs  │ │ anomalies │ │reporter │ │ trackmap │
+│  .py    │ │  .py    │ │  .py    │ │   .py     │ │  .py    │ │   .py    │
+└────┬────┘ └────┬────┘ └────┬────┘ └─────┬─────┘ └────┬────┘ └────┬─────┘
+     │            │            │            │             │            │
+     ▼            ▼            ▼            ▼             ▼            ▼
+  Terminal     CSV files    PNG files   Warnings    PDF report   HTML map
 ```
 
 ## Core Design Pattern: Schema Normalization
@@ -51,6 +51,7 @@ Each module is **independent** and **testable in isolation**.
 | `graphs.py` | data dict | PNG files | Visualization |
 | `anomalies.py` | data dict | warning list | Safety checks |
 | `reporter.py` | data dict | PDF file | Self-contained report generation |
+| `trackmap.py` | data dict | HTML file | Interactive flight track map |
 | `analyzer.py` | CLI args | orchestrates everything | Entry point + routing |
 
 ## Data Flow
@@ -64,6 +65,7 @@ Each module is **independent** and **testable in isolation**.
    - graphs.py → writes PNG files
    - anomalies.py → prints warnings
    - reporter.py → writes PDF report
+   - trackmap.py → writes HTML map
 ```
 
 ## Key Design Decisions

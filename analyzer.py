@@ -8,6 +8,7 @@ from exporter import export_all
 from graphs import generate_all_graphs
 from anomalies import run_all_checks, print_warnings
 from reporter import generate_report
+from trackmap import generate_track_map
 from config import load_config
 
 
@@ -18,9 +19,10 @@ MENU_OPTIONS = {
     "4": "Anomaly Warnings",
     "5": "Run All Analysis",
     "6": "Generate PDF Report",
-    "7": "Change Log File",
-    "8": "Batch Analyze Folder",
-    "9": "Quit",
+    "7": "Generate Flight Track Map",
+    "8": "Change Log File",
+    "9": "Batch Analyze Folder",
+    "10": "Quit",
 }
 
 
@@ -113,6 +115,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Analyze all .tlog/.bin files in a folder and print a comparison table.",
     )
 
+    parser.add_argument(
+        "--map",
+        action="store_true",
+        help="Generate an interactive HTML flight track map in output/.",
+    )
+
     return parser
 
 
@@ -186,14 +194,14 @@ def run_interactive(filepath: str, config: dict) -> None:
                 choices.append(part)
 
         if not choices:
-            print("[WARN] No valid options selected. Enter numbers 1-9.")
+            print("[WARN] No valid options selected. Enter numbers 1-10.")
             continue
 
         # Prevent mixing quit/switch with analysis actions
-        if "9" in choices and len(choices) > 1:
+        if "10" in choices and len(choices) > 1:
             print("[WARN] Quit cannot be combined with other options.")
             continue
-        if "7" in choices and any(c in choices for c in "123456"):
+        if "8" in choices and any(c in choices for c in "1234567"):
             print("[WARN] Change Log File cannot be combined with analysis options.")
             continue
 
@@ -224,6 +232,9 @@ def run_interactive(filepath: str, config: dict) -> None:
                 generate_report(data, output_dir="output", config=config)
 
             elif choice == "7":
+                generate_track_map(data, output_dir="output")
+
+            elif choice == "8":
                 filepath = get_log_file_interactive()
                 data = load_log_interactive(filepath, config)
                 if data is None:
@@ -231,14 +242,14 @@ def run_interactive(filepath: str, config: dict) -> None:
                 else:
                     print(f"[INFO] Loaded: {os.path.basename(filepath)}")
 
-            elif choice == "8":
+            elif choice == "9":
                 folder = input("Enter folder path containing logs: ").strip()
                 if folder and os.path.isdir(folder):
                     run_batch(folder, config)
                 else:
                     print(f"[WARN] Invalid folder: {folder}")
 
-            elif choice == "9":
+            elif choice == "10":
                 print("[DONE] Goodbye.\n")
                 return
 
@@ -360,10 +371,10 @@ def main() -> None:
         print("\n[ERROR] Please provide a log file, use --interactive, or use --batch.")
         sys.exit(1)
 
-    if not any([args.summary, args.export, args.graphs, args.warnings, args.all, args.report]):
+    if not any([args.summary, args.export, args.graphs, args.warnings, args.all, args.report, args.map]):
         arg_parser.print_help()
         print("\n[ERROR] Please specify at least one action flag "
-              "(--summary, --export, --graphs, --warnings, --report, or --all).")
+              "(--summary, --export, --graphs, --warnings, --report, --map, or --all).")
         sys.exit(1)
 
     if args.all:
@@ -409,6 +420,9 @@ def main() -> None:
 
     if args.report:
         generate_report(data, output_dir="output", config=config)
+
+    if args.map:
+        generate_track_map(data, output_dir="output")
 
     print("[DONE] Analysis complete.\n")
 

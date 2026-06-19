@@ -1,7 +1,7 @@
 # Interview Preparation Guide
 
 ## Project Overview (30-second pitch)
-"I built a Python CLI tool that analyzes drone flight logs. It supports two formats — MAVLink .tlog and ArduPilot .bin — auto-detects the format, normalizes the data into a common schema, and provides five analysis modes: summary, CSV export, graph generation, anomaly detection, and PDF report generation. It has an interactive menu mode, YAML-based configuration, and 89 passing tests."
+"I built a Python CLI tool that analyzes drone flight logs. It supports two formats — MAVLink .tlog and ArduPilot .bin — auto-detects the format, normalizes the data into a common schema, and provides seven analysis modes: summary, CSV export, graph generation, anomaly detection, PDF report, flight track map, and batch comparison. It has an interactive menu mode, YAML-based configuration, and 106 passing tests."
 
 ## Key Technical Concepts to Mention
 
@@ -22,6 +22,9 @@
 
 ### 6. PDF Report Generation
 "I created a self-contained PDF report that combines flight summary, embedded graphs, and anomaly warnings into a single shareable file. The report uses a custom FPDF subclass with header/footer, and graphs are generated in a temporary directory then embedded as images."
+
+### 7. Flight Track Map
+"I used folium (Python wrapper for Leaflet.js) to generate interactive HTML maps showing the drone's flight path. The path is color-coded by speed — green for slow, red for fast — with markers at takeoff and landing points. The map supports zoom, pan, fullscreen, and shows mouse coordinates."
 
 ## Common Interview Questions & Answers
 
@@ -51,9 +54,10 @@
 7. **Graphs** → `graphs.py` — matplotlib with Agg backend, dual-axis for power
 8. **Anomalies** → `anomalies.py` — threshold-based checks with None-safe filtering
 9. **PDF Report** → `reporter.py` — FPDF subclass, temp directory for graphs, embedded images
+10. **Flight Track Map** → `trackmap.py` — folium/Leaflet, speed-based coloring, interactive HTML
 
 ## Numbers to Remember
-- 89 tests, 100% pass rate
+- 106 tests, 100% pass rate
 - 2 log formats supported (.tlog, .bin)
 - 5 MAVLink message types parsed
 - 6 DataFlash message types parsed
@@ -61,3 +65,4 @@
 - 4 CSV files exported
 - 3 anomaly checks implemented
 - 1 PDF report with embedded graphs
+- 1 interactive flight track map

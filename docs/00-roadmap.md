@@ -14,12 +14,12 @@
 ## Phase 2 — UX Improvements (DONE)
 - [x] Interactive menu mode (`--interactive`)
 - [x] Multi-choice input support (`1,3` or `2 4`)
-- [x] Hot-swap log file without restarting (option 7)
+- [x] Hot-swap log file without restarting (option 8)
 - [x] PDF report generation (`--report`) — single-file shareable report with embedded graphs
 - [x] Batch mode (`--batch folder/`) — analyze multiple logs, comparison table
+- [x] Flight track map (`--map`) — interactive HTML map with color-coded path
 
 ## Phase 3 — Next Steps (FUTURE)
-- [ ] **GPS track map** — plot flight path on a Leaflet/folium map
 - [ ] **Live streaming** — read from serial port or UDP for real-time analysis
 - [ ] **JSON output** — machine-readable output for dashboard integration
 - [ ] **Plugin system** — user-defined anomaly checks via Python scripts
