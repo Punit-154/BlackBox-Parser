@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+from glob import glob
 from parser import parse_log
 from summary import generate_summary, print_summary
 from exporter import export_all
@@ -18,7 +19,8 @@ MENU_OPTIONS = {
     "5": "Run All Analysis",
     "6": "Generate PDF Report",
     "7": "Change Log File",
-    "8": "Quit",
+    "8": "Batch Analyze Folder",
+    "9": "Quit",
 }
 
 
@@ -103,6 +105,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Generate a self-contained PDF report in output/.",
     )
 
+    parser.add_argument(
+        "--batch",
+        type=str,
+        default=None,
+        metavar="FOLDER",
+        help="Analyze all .tlog/.bin files in a folder and print a comparison table.",
+    )
+
     return parser
 
 
@@ -176,11 +186,11 @@ def run_interactive(filepath: str, config: dict) -> None:
                 choices.append(part)
 
         if not choices:
-            print("[WARN] No valid options selected. Enter numbers 1-8.")
+            print("[WARN] No valid options selected. Enter numbers 1-9.")
             continue
 
         # Prevent mixing quit/switch with analysis actions
-        if "8" in choices and len(choices) > 1:
+        if "9" in choices and len(choices) > 1:
             print("[WARN] Quit cannot be combined with other options.")
             continue
         if "7" in choices and any(c in choices for c in "123456"):
@@ -222,8 +232,102 @@ def run_interactive(filepath: str, config: dict) -> None:
                     print(f"[INFO] Loaded: {os.path.basename(filepath)}")
 
             elif choice == "8":
+                folder = input("Enter folder path containing logs: ").strip()
+                if folder and os.path.isdir(folder):
+                    run_batch(folder, config)
+                else:
+                    print(f"[WARN] Invalid folder: {folder}")
+
+            elif choice == "9":
                 print("[DONE] Goodbye.\n")
                 return
+
+
+def find_log_files(folder: str) -> list[str]:
+    """Find all .tlog and .bin files in the given folder."""
+    patterns = [
+        os.path.join(folder, "*.tlog"),
+        os.path.join(folder, "*.bin"),
+    ]
+    files = []
+    for pattern in patterns:
+        files.extend(glob(pattern))
+    return sorted(files)
+
+
+def run_batch(folder: str, config: dict) -> None:
+    """Analyze all log files in a folder and print a comparison table."""
+    files = find_log_files(folder)
+
+    if not files:
+        print(f"[WARN] No .tlog or .bin files found in: {folder}")
+        return
+
+    print(f"\n[BATCH] Found {len(files)} log file(s) in: {folder}")
+    print("=" * 80)
+
+    results = []
+    for filepath in files:
+        filename = os.path.basename(filepath)
+        print(f"\n[BATCH] Processing: {filename}")
+
+        try:
+            data = parse_log(filepath, config=config)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"  [ERROR] {exc}")
+            continue
+
+        if data["meta"]["parsed_messages"] == 0:
+            print("  [WARN] No supported messages found, skipping.")
+            continue
+
+        stats = generate_summary(data)
+        warnings = run_all_checks(data, config=config)
+
+        results.append({
+            "file": filename,
+            "duration": stats["duration_formatted"],
+            "max_alt": stats["max_altitude"],
+            "max_speed": stats["max_speed"],
+            "distance": stats["total_distance"],
+            "battery_start": stats["battery_start"],
+            "battery_end": stats["battery_end"],
+            "warnings": len(warnings),
+        })
+
+    if not results:
+        print("\n[BATCH] No valid logs processed.")
+        return
+
+    _print_batch_table(results)
+
+
+def _print_batch_table(results: list[dict]) -> None:
+    """Print a formatted comparison table of batch analysis results."""
+    print("\n" + "=" * 100)
+    print("                           BATCH ANALYSIS COMPARISON TABLE")
+    print("=" * 100)
+
+    header = (
+        f"{'File':<20} {'Duration':<12} {'Max Alt':<10} {'Max Spd':<10} "
+        f"{'Distance':<12} {'Batt Start':<12} {'Batt End':<10} {'Warnings':<10}"
+    )
+    print(header)
+    print("-" * 100)
+
+    for r in results:
+        batt_start = f"{r['battery_start']}%" if r["battery_start"] >= 0 else "N/A"
+        batt_end = f"{r['battery_end']}%" if r["battery_end"] >= 0 else "N/A"
+
+        row = (
+            f"{r['file']:<20} {r['duration']:<12} {r['max_alt']:<10} {r['max_speed']:<10} "
+            f"{r['distance']:<12} {batt_start:<12} {batt_end:<10} {r['warnings']:<10}"
+        )
+        print(row)
+
+    print("=" * 100)
+    print(f"Total files analyzed: {len(results)}")
+    print()
 
 
 def main() -> None:
@@ -234,6 +338,16 @@ def main() -> None:
     # Load configuration (from --config path or cwd config.yaml)
     config = load_config(args.config)
 
+    # --- Batch mode ---
+    if args.batch:
+        if not os.path.isdir(args.batch):
+            print(f"[ERROR] Not a valid directory: {args.batch}")
+            sys.exit(1)
+        print_banner()
+        run_batch(args.batch, config)
+        print("[DONE] Batch analysis complete.\n")
+        return
+
     # --- Interactive mode ---
     if args.interactive:
         filepath = args.logfile or get_log_file_interactive()
@@ -243,7 +357,7 @@ def main() -> None:
     # --- Flag-based mode ---
     if args.logfile is None:
         arg_parser.print_help()
-        print("\n[ERROR] Please provide a log file or use --interactive.")
+        print("\n[ERROR] Please provide a log file, use --interactive, or use --batch.")
         sys.exit(1)
 
     if not any([args.summary, args.export, args.graphs, args.warnings, args.all, args.report]):

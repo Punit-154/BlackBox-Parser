@@ -12,6 +12,7 @@ It fully supports both:
 - **Graphs**: Generates PNG visualizations in `output/graphs/` for Altitude, Battery, Speed, Power, and Attitude vs. Time.
 - **PDF Report**: Generates a self-contained PDF report with summary, embedded graphs, and warnings in `output/flight_report.pdf`.
 - **Anomalies**: Detects critical warnings (low battery, altitude drop, excessive roll/pitch angles).
+- **Batch Mode**: Analyze multiple logs at once and compare them in a side-by-side table.
 - **Interactive Mode**: Menu-driven interface for users who prefer not to memorize CLI flags.
 
 ## Installation
@@ -40,6 +41,9 @@ python analyzer.py logs/sample.tlog --all
 
 # Generate a self-contained PDF report
 python analyzer.py logs/sample.tlog --report
+
+# Batch analyze all logs in a folder
+python analyzer.py --batch logs/
 
 # Interactive mode — launch menu, then provide log file when prompted
 python analyzer.py --interactive

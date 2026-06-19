@@ -94,6 +94,56 @@ class TestAnalyzerCLI:
         mock_parse.assert_called_once()
         mock_report.assert_called_once()
 
+    @patch("analyzer.sys.argv", ["analyzer.py", "--batch", "nonexistent_folder"])
+    def test_batch_invalid_folder_exits(self):
+        with pytest.raises(SystemExit) as exc:
+            analyzer.main()
+        assert exc.value.code == 1
+
+    def test_find_log_files(self, tmp_path):
+        (tmp_path / "test.tlog").touch()
+        (tmp_path / "test.bin").touch()
+        (tmp_path / "test.txt").touch()
+
+        files = analyzer.find_log_files(str(tmp_path))
+        assert len(files) == 2
+        assert any("test.tlog" in f for f in files)
+        assert any("test.bin" in f for f in files)
+
+    def test_find_log_files_empty(self, tmp_path):
+        files = analyzer.find_log_files(str(tmp_path))
+        assert len(files) == 0
+
+    def test_print_batch_table(self, capsys):
+        results = [
+            {
+                "file": "test.tlog",
+                "duration": "5m 30s",
+                "max_alt": 50.0,
+                "max_speed": 15.0,
+                "distance": 500.0,
+                "battery_start": 100,
+                "battery_end": 80,
+                "warnings": 0,
+            },
+            {
+                "file": "test.bin",
+                "duration": "10m 0s",
+                "max_alt": 75.0,
+                "max_speed": 20.0,
+                "distance": 1000.0,
+                "battery_start": -1,
+                "battery_end": -1,
+                "warnings": 2,
+            },
+        ]
+        analyzer._print_batch_table(results)
+        captured = capsys.readouterr()
+        assert "BATCH ANALYSIS COMPARISON TABLE" in captured.out
+        assert "test.tlog" in captured.out
+        assert "test.bin" in captured.out
+        assert "Total files analyzed: 2" in captured.out
+
 
 class TestPrintFunctions:
     def test_print_summary(self, capsys):

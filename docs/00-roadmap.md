@@ -16,9 +16,9 @@
 - [x] Multi-choice input support (`1,3` or `2 4`)
 - [x] Hot-swap log file without restarting (option 7)
 - [x] PDF report generation (`--report`) — single-file shareable report with embedded graphs
+- [x] Batch mode (`--batch folder/`) — analyze multiple logs, comparison table
 
 ## Phase 3 — Next Steps (FUTURE)
-- [ ] **Batch mode** — analyze a folder of logs, generate comparison table
 - [ ] **GPS track map** — plot flight path on a Leaflet/folium map
 - [ ] **Live streaming** — read from serial port or UDP for real-time analysis
 - [ ] **JSON output** — machine-readable output for dashboard integration
