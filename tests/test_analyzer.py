@@ -81,6 +81,19 @@ class TestAnalyzerCLI:
             analyzer.main()
         assert exc.value.code == 1
 
+    @patch("analyzer.sys.argv", ["analyzer.py", "fake.tlog", "--report"])
+    @patch("analyzer.parse_log")
+    @patch("analyzer.generate_report")
+    def test_report_flag(self, mock_report, mock_parse, empty_data):
+        empty_data["meta"]["parsed_messages"] = 10
+        mock_parse.return_value = empty_data
+        mock_report.return_value = "output/flight_report.pdf"
+
+        analyzer.main()
+
+        mock_parse.assert_called_once()
+        mock_report.assert_called_once()
+
 
 class TestPrintFunctions:
     def test_print_summary(self, capsys):

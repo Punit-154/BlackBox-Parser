@@ -6,6 +6,7 @@ from summary import generate_summary, print_summary
 from exporter import export_all
 from graphs import generate_all_graphs
 from anomalies import run_all_checks, print_warnings
+from reporter import generate_report
 from config import load_config
 
 
@@ -15,8 +16,9 @@ MENU_OPTIONS = {
     "3": "Generate Graphs",
     "4": "Anomaly Warnings",
     "5": "Run All Analysis",
-    "6": "Change Log File",
-    "7": "Quit",
+    "6": "Generate PDF Report",
+    "7": "Change Log File",
+    "8": "Quit",
 }
 
 
@@ -95,6 +97,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Launch interactive menu mode (no flags needed).",
     )
 
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="Generate a self-contained PDF report in output/.",
+    )
+
     return parser
 
 
@@ -168,14 +176,14 @@ def run_interactive(filepath: str, config: dict) -> None:
                 choices.append(part)
 
         if not choices:
-            print("[WARN] No valid options selected. Enter numbers 1-7.")
+            print("[WARN] No valid options selected. Enter numbers 1-8.")
             continue
 
         # Prevent mixing quit/switch with analysis actions
-        if "7" in choices and len(choices) > 1:
+        if "8" in choices and len(choices) > 1:
             print("[WARN] Quit cannot be combined with other options.")
             continue
-        if "6" in choices and any(c in choices for c in "12345"):
+        if "7" in choices and any(c in choices for c in "123456"):
             print("[WARN] Change Log File cannot be combined with analysis options.")
             continue
 
@@ -203,6 +211,9 @@ def run_interactive(filepath: str, config: dict) -> None:
                 print_warnings(warning_list)
 
             elif choice == "6":
+                generate_report(data, output_dir="output", config=config)
+
+            elif choice == "7":
                 filepath = get_log_file_interactive()
                 data = load_log_interactive(filepath, config)
                 if data is None:
@@ -210,7 +221,7 @@ def run_interactive(filepath: str, config: dict) -> None:
                 else:
                     print(f"[INFO] Loaded: {os.path.basename(filepath)}")
 
-            elif choice == "7":
+            elif choice == "8":
                 print("[DONE] Goodbye.\n")
                 return
 
@@ -235,10 +246,10 @@ def main() -> None:
         print("\n[ERROR] Please provide a log file or use --interactive.")
         sys.exit(1)
 
-    if not any([args.summary, args.export, args.graphs, args.warnings, args.all]):
+    if not any([args.summary, args.export, args.graphs, args.warnings, args.all, args.report]):
         arg_parser.print_help()
         print("\n[ERROR] Please specify at least one action flag "
-              "(--summary, --export, --graphs, --warnings, or --all).")
+              "(--summary, --export, --graphs, --warnings, --report, or --all).")
         sys.exit(1)
 
     if args.all:
@@ -281,6 +292,9 @@ def main() -> None:
     if args.warnings:
         warning_list = run_all_checks(data, config=config)
         print_warnings(warning_list)
+
+    if args.report:
+        generate_report(data, output_dir="output", config=config)
 
     print("[DONE] Analysis complete.\n")
 

@@ -10,6 +10,7 @@ It fully supports both:
 - **Summary**: Generates an overview of flight duration, speed, max altitude, battery usage, cumulative distance, displacement, climb/descent rates, and a chronological flight events timeline.
 - **CSV Export**: Extracts telemetry into `output/csv/` for GPS, Attitude, Altitude, and Battery data.
 - **Graphs**: Generates PNG visualizations in `output/graphs/` for Altitude, Battery, Speed, Power, and Attitude vs. Time.
+- **PDF Report**: Generates a self-contained PDF report with summary, embedded graphs, and warnings in `output/flight_report.pdf`.
 - **Anomalies**: Detects critical warnings (low battery, altitude drop, excessive roll/pitch angles).
 - **Interactive Mode**: Menu-driven interface for users who prefer not to memorize CLI flags.
 
@@ -36,6 +37,9 @@ python analyzer.py logs/sample.bin --export --graphs
 
 # Run all analysis steps at once (summary, export, graphs, warnings)
 python analyzer.py logs/sample.tlog --all
+
+# Generate a self-contained PDF report
+python analyzer.py logs/sample.tlog --report
 
 # Interactive mode — launch menu, then provide log file when prompted
 python analyzer.py --interactive
