@@ -1,7 +1,7 @@
 # Interview Preparation Guide
 
 ## Project Overview (30-second pitch)
-"I built a Python CLI tool that analyzes drone flight logs. It supports two formats — MAVLink .tlog and ArduPilot .bin — auto-detects the format, normalizes the data into a common schema, and provides four analysis modes: summary, CSV export, graph generation, and anomaly detection. It has an interactive menu mode, YAML-based configuration, and 79 passing tests."
+"I built a Python CLI tool that analyzes drone flight logs. It supports two formats — MAVLink .tlog and ArduPilot .bin — auto-detects the format, normalizes the data into a common schema, and provides five analysis modes: summary, CSV export, graph generation, anomaly detection, and PDF report generation. It has an interactive menu mode, YAML-based configuration, and 89 passing tests."
 
 ## Key Technical Concepts to Mention
 
@@ -19,6 +19,9 @@
 
 ### 5. Interactive Mode
 "I added a menu-driven interface that accepts single or multiple selections (e.g., '1,3' to run summary and export). It supports hot-swapping log files without restarting."
+
+### 6. PDF Report Generation
+"I created a self-contained PDF report that combines flight summary, embedded graphs, and anomaly warnings into a single shareable file. The report uses a custom FPDF subclass with header/footer, and graphs are generated in a temporary directory then embedded as images."
 
 ## Common Interview Questions & Answers
 
@@ -47,12 +50,14 @@
 6. **Export** → `exporter.py` — pandas DataFrames to CSV
 7. **Graphs** → `graphs.py` — matplotlib with Agg backend, dual-axis for power
 8. **Anomalies** → `anomalies.py` — threshold-based checks with None-safe filtering
+9. **PDF Report** → `reporter.py` — FPDF subclass, temp directory for graphs, embedded images
 
 ## Numbers to Remember
-- 79 tests, 100% pass rate
+- 89 tests, 100% pass rate
 - 2 log formats supported (.tlog, .bin)
 - 5 MAVLink message types parsed
 - 6 DataFlash message types parsed
 - 5 graph types generated
 - 4 CSV files exported
 - 3 anomaly checks implemented
+- 1 PDF report with embedded graphs

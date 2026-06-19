@@ -16,8 +16,9 @@ MENU_OPTIONS = {
     "3": "Generate Graphs",
     "4": "Anomaly Warnings",
     "5": "Run All Analysis",
-    "6": "Change Log File",
-    "7": "Quit",
+    "6": "Generate PDF Report",
+    "7": "Change Log File",
+    "8": "Quit",
 }
 ```
 Single source of truth for the interactive menu. If you want to add a new option, update this dict and add a handler in `run_interactive()`.
@@ -30,6 +31,7 @@ Defines all CLI arguments using Python's `argparse` module:
 - `--graphs` — generate PNG graphs
 - `--warnings` — run anomaly checks
 - `--all` — run all of the above
+- `--report` — generate self-contained PDF report
 - `--config` — custom YAML config path
 - `--interactive` — launch menu mode
 
@@ -45,7 +47,7 @@ Prints the ASCII art header. Called once at startup.
 | `load_log_interactive()` | Calls `parse_log()` with error handling, returns `None` on failure |
 | `run_interactive()` | The main event loop — shows menu, reads choice(s), dispatches to analysis functions |
 
-**Multi-choice support:** Users can type `1,3` or `2 4` to run multiple analyses in one selection. Safety guards prevent mixing `6` (change file) or `7` (quit) with analysis options.
+**Multi-choice support:** Users can type `1,3` or `2 4` to run multiple analyses in one selection. Safety guards prevent mixing `7` (change file) or `8` (quit) with analysis options.
 
 ### 5. main()
 The entry point. Flow:
@@ -60,7 +62,7 @@ The entry point. Flow:
 ```
 User input → argparse → args.logfile → parse_log() → data dict
                                                          ↓
-                                          summary / export / graphs / anomalies
+                                          summary / export / graphs / anomalies / reporter
 ```
 
 ## Interview Points

@@ -21,13 +21,13 @@
                   │                         │
      ┌────────────┼────────────┐            │
      │            │            │            │
-┌────▼────┐ ┌────▼────┐ ┌────▼────┐ ┌─────▼─────┐
-│summary  │ │exporter │ │ graphs  │ │ anomalies │
-│  .py    │ │  .py    │ │  .py    │ │   .py     │
-└────┬────┘ └────┬────┘ └────┬────┘ └─────┬─────┘
-     │            │            │            │
-     ▼            ▼            ▼            ▼
-  Terminal     CSV files    PNG files   Warnings
+┌────▼────┐ ┌────▼────┐ ┌────▼────┐ ┌─────▼─────┐ ┌─────────┐
+│summary  │ │exporter │ │ graphs  │ │ anomalies │ │reporter │
+│  .py    │ │  .py    │ │  .py    │ │   .py     │ │  .py    │
+└────┬────┘ └────┬────┘ └────┬────┘ └─────┬─────┘ └────┬────┘
+     │            │            │            │             │
+     ▼            ▼            ▼            ▼             ▼
+  Terminal     CSV files    PNG files   Warnings    PDF report
 ```
 
 ## Core Design Pattern: Schema Normalization
@@ -50,6 +50,7 @@ Each module is **independent** and **testable in isolation**.
 | `exporter.py` | data dict | CSV files | Data export |
 | `graphs.py` | data dict | PNG files | Visualization |
 | `anomalies.py` | data dict | warning list | Safety checks |
+| `reporter.py` | data dict | PDF file | Self-contained report generation |
 | `analyzer.py` | CLI args | orchestrates everything | Entry point + routing |
 
 ## Data Flow
@@ -62,6 +63,7 @@ Each module is **independent** and **testable in isolation**.
    - exporter.py → writes CSV files
    - graphs.py → writes PNG files
    - anomalies.py → prints warnings
+   - reporter.py → writes PDF report
 ```
 
 ## Key Design Decisions
