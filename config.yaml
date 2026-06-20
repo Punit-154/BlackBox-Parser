@@ -1,0 +1,57 @@
+# =============================================================================
+# BlackBox-Parser — Configuration File
+# =============================================================================
+#
+# Place this file as "config.yaml" in the working directory, or pass its path
+# explicitly with:  python analyzer.py <logfile> --config path/to/config.yaml
+#
+# Any value you omit will fall back to the built-in default shown below.
+# You only need to include the settings you want to override.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Anomaly-detection thresholds
+# ---------------------------------------------------------------------------
+thresholds:
+  # Minimum battery percentage before a LOW BATTERY warning is raised.
+  # Default: 20  (percent)
+  battery_low_percent: 20
+
+  # Minimum altitude drop (in metres) to trigger an ALTITUDE DROP warning.
+  # Default: 10.0
+  altitude_drop_m: 10.0
+
+  # Maximum acceptable roll angle (degrees) before an EXCESSIVE ROLL warning.
+  # Set to 360 to effectively disable the check.
+  # Default: 360.0
+  roll_limit_deg: 45.0
+
+  # Maximum acceptable pitch angle (degrees) before an EXCESSIVE PITCH warning.
+  # Set to 360 to effectively disable the check.
+  # Default: 360.0
+  pitch_limit_deg: 45.0
+
+# ---------------------------------------------------------------------------
+# Output directories
+# ---------------------------------------------------------------------------
+output:
+  # Directory where exported CSV files are written.
+  # Default: "output/csv"
+  csv_dir: "output/csv"
+
+  # Directory where generated graph images (PNG) are saved.
+  # Default: "output/graphs"
+  graph_dir: "output/graphs"
+
+# ---------------------------------------------------------------------------
+# Battery estimation parameters (used for .bin logs that lack %)
+# ---------------------------------------------------------------------------
+battery_estimation:
+  # Voltage of a fully charged LiPo cell (volts).
+  # Used to auto-detect cell count and estimate remaining percentage.
+  # Default: 4.2
+  cell_voltage_full: 4.2
+
+  # Voltage of an empty LiPo cell (volts).
+  # Default: 3.5
+  cell_voltage_empty: 3.5

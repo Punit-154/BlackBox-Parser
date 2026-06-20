@@ -1,21 +1,16 @@
 """Tests for analyzer.py CLI and print functions in other modules."""
-
 import sys
 import pytest
 from unittest.mock import patch, MagicMock
-
 import analyzer
 import summary
 import anomalies
-
-
 class TestAnalyzerCLI:
     @patch("analyzer.sys.argv", ["analyzer.py"])
     def test_no_args_exits(self):
         with pytest.raises(SystemExit) as exc:
             analyzer.main()
         assert exc.value.code == 1
-
     @patch("analyzer.sys.argv", ["analyzer.py", "fake.tlog", "--summary"])
     @patch("analyzer.parse_log")
     @patch("analyzer.generate_summary")
@@ -24,13 +19,10 @@ class TestAnalyzerCLI:
         mock_parse.return_value = empty_data
         empty_data["meta"]["parsed_messages"] = 10
         mock_gen.return_value = {"duration_formatted": "0m 0s", "battery_start": -1}
-        
         analyzer.main()
-        
         mock_parse.assert_called_once()
         mock_gen.assert_called_once()
         mock_print.assert_called_once()
-
     @patch("analyzer.sys.argv", ["analyzer.py", "fake.tlog", "--all"])
     @patch("analyzer.parse_log")
     @patch("analyzer.generate_summary")
@@ -56,23 +48,18 @@ class TestAnalyzerCLI:
             "attitude_sample_count": 0,
             "events": []
         }
-        
         analyzer.main()
-        
         mock_summary.assert_called_once()
         mock_export.assert_called_once()
         mock_graphs.assert_called_once()
         mock_checks.assert_called_once()
-
     @patch("analyzer.sys.argv", ["analyzer.py", "fake.tlog", "--summary"])
     @patch("analyzer.parse_log")
     def test_no_messages_exits(self, mock_parse, empty_data):
-        # parsed_messages = 0
         mock_parse.return_value = empty_data
         with pytest.raises(SystemExit) as exc:
             analyzer.main()
         assert exc.value.code == 0
-
     @patch("analyzer.sys.argv", ["analyzer.py", "fake.tlog", "--summary"])
     @patch("analyzer.parse_log")
     def test_file_not_found_exits(self, mock_parse):
@@ -80,7 +67,6 @@ class TestAnalyzerCLI:
         with pytest.raises(SystemExit) as exc:
             analyzer.main()
         assert exc.value.code == 1
-
     @patch("analyzer.sys.argv", ["analyzer.py", "fake.tlog", "--report"])
     @patch("analyzer.parse_log")
     @patch("analyzer.generate_report")
@@ -88,32 +74,25 @@ class TestAnalyzerCLI:
         empty_data["meta"]["parsed_messages"] = 10
         mock_parse.return_value = empty_data
         mock_report.return_value = "output/flight_report.pdf"
-
         analyzer.main()
-
         mock_parse.assert_called_once()
         mock_report.assert_called_once()
-
     @patch("analyzer.sys.argv", ["analyzer.py", "--batch", "nonexistent_folder"])
     def test_batch_invalid_folder_exits(self):
         with pytest.raises(SystemExit) as exc:
             analyzer.main()
         assert exc.value.code == 1
-
     def test_find_log_files(self, tmp_path):
         (tmp_path / "test.tlog").touch()
         (tmp_path / "test.bin").touch()
         (tmp_path / "test.txt").touch()
-
         files = analyzer.find_log_files(str(tmp_path))
         assert len(files) == 2
         assert any("test.tlog" in f for f in files)
         assert any("test.bin" in f for f in files)
-
     def test_find_log_files_empty(self, tmp_path):
         files = analyzer.find_log_files(str(tmp_path))
         assert len(files) == 0
-
     def test_print_batch_table(self, capsys):
         results = [
             {
@@ -143,8 +122,6 @@ class TestAnalyzerCLI:
         assert "test.tlog" in captured.out
         assert "test.bin" in captured.out
         assert "Total files analyzed: 2" in captured.out
-
-
 class TestPrintFunctions:
     def test_print_summary(self, capsys):
         stats = {
@@ -173,7 +150,6 @@ class TestPrintFunctions:
         assert "FLIGHT SUMMARY" in captured.out
         assert "0m 10s" in captured.out
         assert "Test Event" in captured.out
-
     def test_print_summary_no_battery(self, capsys):
         stats = {
             "duration_formatted": "0m 10s",
@@ -195,7 +171,6 @@ class TestPrintFunctions:
         summary.print_summary(stats)
         captured = capsys.readouterr()
         assert "Not available" in captured.out
-
     def test_print_warnings(self, capsys):
         warnings = ["LOW BATTERY at T+10s", "ALTITUDE DROP"]
         anomalies.print_warnings(warnings)
@@ -203,7 +178,6 @@ class TestPrintFunctions:
         assert "FLIGHT WARNINGS" in captured.out
         assert "Found 2 warning(s)" in captured.out
         assert "LOW BATTERY at T+10s" in captured.out
-
     def test_print_warnings_clean(self, capsys):
         anomalies.print_warnings([])
         captured = capsys.readouterr()

@@ -1,4 +1,4 @@
-# MAVLink Flight Log Analyzer
+# BlackBox-Parser
 
 A modular command-line tool for parsing and analyzing flight logs.
 It fully supports both:
@@ -19,9 +19,16 @@ It fully supports both:
 ## Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/Punit-154/BlackBox-Parser
+cd BlackBox-Parser
+
 # Create a virtual environment (optional but recommended)
 python -m venv venv
+
+# Activate the virtual environment
 venv\Scripts\activate  # On Windows
+# source venv/bin/activate  # On macOS/Linux
 
 # Install requirements
 pip install -r requirements.txt
