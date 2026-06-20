@@ -28,7 +28,7 @@ class FlightReport(FPDF):
         self.set_y(-15)
         self.set_font("Helvetica", "I", 8)
         self.set_text_color(150, 150, 150)
-        self.cell(0, 10, f"Page {self.page_no()}/{ nb} ", align="C")
+        self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align="C")
     def add_title_page(self):
         self.add_page()
         self.ln(40)
