@@ -20,7 +20,7 @@ It fully supports both:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Punit-154/BlackBox-Parser
+git clone https://github.com/Punit-154/BlackBox-Parser.git
 cd BlackBox-Parser
 
 # Create a virtual environment (optional but recommended)
